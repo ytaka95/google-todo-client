@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../features/auth/authSlice';
-import { signInWithGoogle, GoogleUserInfo } from '../services/auth';
+import { signInWithGoogle, GoogleUserInfo, initGapiClient } from '../services/auth';
 
 const LoginButton: React.FC = () => {
   const dispatch = useDispatch();
@@ -14,6 +14,14 @@ const LoginButton: React.FC = () => {
       
       // Google認証を実行
       const userInfo: GoogleUserInfo = await signInWithGoogle();
+      
+      // GAPIクライアントを初期化（Google Tasks APIを使用するため）
+      try {
+        await initGapiClient();
+      } catch (apiError) {
+        console.warn('GAPI Client initialization failed:', apiError);
+        // 認証自体は成功しているので、このエラーはユーザーに表示しない
+      }
       
       // Redux storeに認証情報を保存
       dispatch(loginSuccess({
