@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { fetchTodosStart, fetchTodosSuccess, fetchTodosFailure, updateTodoStart, updateTodoSuccess } from '../features/todos/todosSlice';
+import { logout } from '../features/auth/authSlice';
 import TodoItem from './TodoItem';
 import TodoModal from './TodoModal';
 import { TodoItem as TodoItemType } from '../types/todo';
 import { fetchTodos, updateTodo } from '../services/todoApi';
+import { signOut } from '../services/auth';
 
 const TodoList: React.FC = () => {
   const dispatch = useDispatch();
@@ -67,6 +69,16 @@ const TodoList: React.FC = () => {
     setModalMode('edit');
   };
   
+  // ログアウト処理
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      dispatch(logout());
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+  };
+  
   if (loading && items.length === 0) {
     return <div className="loading">読み込み中...</div>;
   }
@@ -77,7 +89,12 @@ const TodoList: React.FC = () => {
   
   return (
     <div className="todo-list-container">
-      <h1>ToDo一覧</h1>
+      <div className="todo-header">
+        <h1>ToDo一覧</h1>
+        <button className="logout-button" onClick={handleLogout}>
+          ログアウト
+        </button>
+      </div>
       
       <div className="todo-list">
         {items.length === 0 ? (
