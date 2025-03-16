@@ -1,5 +1,5 @@
 import { TodoItem } from '../types/todo';
-import { getAccessToken } from './auth';
+import { getAccessToken, refreshAccessToken } from './auth';
 import { initGapiClient } from './auth';
 
 // ローカルキャッシュのキー
@@ -30,26 +30,58 @@ const mapGoogleTaskToTodoItem = (task: any): TodoItem => {
 };
 
 // TodoItemをGoogle Tasks API形式に変換する関数
-const mapTodoItemToGoogleTask = (todo: Partial<TodoItem>): any => {
+const mapTodoItemToGoogleTask = (todo: Partial<TodoItem>, includeId: boolean = false): any => {
   const task: any = {};
+  
+  // IDを含める場合（更新操作で必要）
+  if (includeId && todo.id) task.id = todo.id;
   
   if (todo.title !== undefined) task.title = todo.title;
   if (todo.notes !== undefined) task.notes = todo.notes;
   if (todo.due !== undefined) task.due = todo.due;
   if (todo.completed !== undefined) {
     task.status = todo.completed ? 'completed' : 'needsAction';
+    
+    // 完了の場合は完了日を設定
+    if (todo.completed) {
+      task.completed = new Date().toISOString();
+    } else {
+      // 未完了の場合、completedフィールドを削除
+      task.completed = null;
+    }
   }
   
   return task;
 };
 
 // エラーハンドリング用のラッパー関数
-const handleApiError = (error: any): never => {
+const handleApiError = async (error: any, retryFn?: () => Promise<any>): Promise<any> => {
   console.error('Google Tasks API Error:', error);
+  
+  // 401認証エラーとトークンリフレッシュの処理
+  if (error.result && error.result.error && error.result.error.code === 401 && retryFn) {
+    try {
+      // トークンを更新
+      console.log('Access token expired, attempting to refresh...');
+      await refreshAccessToken();
+      
+      // GAPIクライアントを再初期化
+      await initGapiClient();
+      
+      // 元の操作をリトライ
+      console.log('Retrying operation with new token...');
+      return await retryFn();
+    } catch (refreshError) {
+      console.error('Token refresh failed:', refreshError);
+      throw new Error('認証の更新に失敗しました。再度ログインしてください。');
+    }
+  }
+  
   // API固有のエラーメッセージがある場合はそれを使用
   if (error.result && error.result.error) {
     throw new Error(`Google Tasks API: ${error.result.error.message}`);
   }
+  
   throw error;
 };
 
@@ -167,7 +199,7 @@ export const fetchTodos = async (): Promise<TodoItem[]> => {
 
 // 新しいTODOを追加する
 export const addTodo = async (todoData: Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<TodoItem> => {
-  try {
+  const executeAddTodo = async (): Promise<TodoItem> => {
     // GAPIクライアントを初期化
     await initGapiClient();
     
@@ -199,15 +231,18 @@ export const addTodo = async (todoData: Omit<TodoItem, 'id' | 'createdAt' | 'upd
     localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(todos));
     
     return newTodo;
-    
+  };
+  
+  try {
+    return await executeAddTodo();
   } catch (error) {
-    return handleApiError(error);
+    return handleApiError(error, executeAddTodo);
   }
 };
 
 // TODOを更新する
 export const updateTodo = async (id: string, todoData: Partial<Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>>): Promise<TodoItem> => {
-  try {
+  const executeUpdateTodo = async (): Promise<TodoItem> => {
     // GAPIクライアントを初期化
     await initGapiClient();
     
@@ -220,8 +255,33 @@ export const updateTodo = async (id: string, todoData: Partial<Omit<TodoItem, 'i
     // デフォルトのタスクリストIDを取得
     const taskListId = await fetchDefaultTaskList();
     
-    // Google Tasks API形式に変換
-    const taskResource = mapTodoItemToGoogleTask(todoData);
+    // Google Tasks API形式に変換（IDを含める）
+    const taskResource = mapTodoItemToGoogleTask({...todoData, id}, true);
+    
+    // 先に現在のタスクを取得
+    try {
+      const currentTask = await window.gapi.client.tasks.tasks.get({
+        tasklist: taskListId,
+        task: id
+      });
+      
+      // 既存のタスクが取得できなかった場合はエラー
+      if (!currentTask.result) {
+        throw new Error(`タスクID: ${id} が見つかりません`);
+      }
+      
+      // 現在のタスクの状態も反映（特に必要なフィールドは既存データから継承）
+      if (!taskResource.title && currentTask.result.title) {
+        taskResource.title = currentTask.result.title;
+      }
+    } catch (error) {
+      console.error('Failed to fetch current task state:', error);
+      // 取得に失敗しても更新は続行（エラーはスローしない）
+    }
+    
+    // デバッグ用にリクエスト情報をログ出力
+    console.log('Updating task with ID:', id);
+    console.log('Task resource:', JSON.stringify(taskResource, null, 2));
     
     // タスクを更新
     const response = await window.gapi.client.tasks.tasks.update({
@@ -245,15 +305,18 @@ export const updateTodo = async (id: string, todoData: Partial<Omit<TodoItem, 'i
     }
     
     return updatedTodo;
-    
+  };
+  
+  try {
+    return await executeUpdateTodo();
   } catch (error) {
-    return handleApiError(error);
+    return handleApiError(error, executeUpdateTodo);
   }
 };
 
 // TODOを削除する
 export const deleteTodo = async (id: string): Promise<string> => {
-  try {
+  const executeDeleteTodo = async (): Promise<string> => {
     // GAPIクライアントを初期化
     await initGapiClient();
     
@@ -281,8 +344,11 @@ export const deleteTodo = async (id: string): Promise<string> => {
     }
     
     return id;
-    
+  };
+  
+  try {
+    return await executeDeleteTodo();
   } catch (error) {
-    return handleApiError(error);
+    return handleApiError(error, executeDeleteTodo);
   }
 };

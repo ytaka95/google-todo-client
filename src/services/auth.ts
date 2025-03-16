@@ -214,6 +214,38 @@ export const getAccessToken = (): string | null => {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 };
 
+// トークンをリフレッシュする関数
+export const refreshAccessToken = (): Promise<string> => {
+  if (!window.google) {
+    return Promise.reject(new Error('Google API not loaded'));
+  }
+
+  return new Promise((resolve, reject) => {
+    try {
+      // @ts-ignore - windowオブジェクトのgoogleプロパティは型定義されていないので無視
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        callback: (tokenResponse: any) => {
+          if (tokenResponse.error) {
+            reject(new Error(tokenResponse.error));
+            return;
+          }
+
+          // 新しいアクセストークンを保存
+          localStorage.setItem(ACCESS_TOKEN_KEY, tokenResponse.access_token);
+          resolve(tokenResponse.access_token);
+        }
+      });
+
+      // 自動でトークンを更新 (ユーザーの操作は不要)
+      tokenClient.requestAccessToken({ prompt: '' });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 // ログアウト処理
 export const signOut = (): Promise<void> => {
   return new Promise<void>((resolve) => {
