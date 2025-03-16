@@ -61,3 +61,7 @@
 - `src/App.css`: Global styles including logout button and header styles
 - `src/main.tsx`: Entry point that sets up Redux store and renders App component
 - `src/store/index.ts`: Redux store configuration
+
+## Important Notes
+
+If any files have been updated, please check whether there are any changes to the content of "File Documentation" and update it as needed.
