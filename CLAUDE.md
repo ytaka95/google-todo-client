@@ -43,7 +43,7 @@
 ## File Documentation
 
 ### Auth Related Files
-- `src/services/auth.ts`: Google OAuth authentication service with functions like `initGoogleAuth()`, `signInWithGoogle()`, and `signOut()`
+- `src/services/auth.ts`: Google OAuth authentication service with functions like `initGoogleAuth()`, `signInWithGoogle()`, `refreshAccessToken()`, and `signOut()`
 - `src/features/auth/authSlice.ts`: Redux slice for authentication state management with actions for login/logout
 - `src/components/LoginPage.tsx`: Main login page component that initializes Google Auth and renders LoginButton
 - `src/components/LoginButton.tsx`: Button component that triggers Google sign-in
@@ -53,7 +53,7 @@
 - `src/components/TodoItem.tsx`: Individual todo item component
 - `src/components/TodoModal.tsx`: Modal for viewing, editing, or adding todo items
 - `src/features/todos/todosSlice.ts`: Redux slice for todo state management
-- `src/services/todoApi.ts`: API service for todo CRUD operations
+- `src/services/todoApi.ts`: API service for todo CRUD operations with token refresh and retry mechanisms
 - `src/types/todo.ts`: TypeScript interfaces for todo data
 
 ### App Structure
@@ -63,5 +63,17 @@
 - `src/store/index.ts`: Redux store configuration
 
 ## Important Notes
+
+### Authentication Flow
+- OAuth2 authentication is used for Google Tasks API access
+- Access tokens are stored in localStorage under the key 'google_access_token'
+- The app implements automatic token refresh when API calls return 401 Unauthorized errors
+- API operations will automatically retry after successful token refresh
+
+### Error Handling
+- API calls use a retry mechanism for handling expired tokens
+- Each API function has a dedicated execution wrapper for retry support
+- Network errors are handled gracefully with fallback to cached data
+- Console debugging is enabled for API communication
 
 If any files have been updated, please check whether there are any changes to the content of "File Documentation" and update it as needed.
