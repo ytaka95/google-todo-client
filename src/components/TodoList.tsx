@@ -16,21 +16,8 @@ const TodoList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'view' | 'edit' | 'add'>('view');
   
-  // 初回マウント時にTODOデータを取得
-  useEffect(() => {
-    const loadTodos = async () => {
-      try {
-        dispatch(fetchTodosStart());
-        const todos = await fetchTodos();
-        dispatch(fetchTodosSuccess(todos));
-      } catch (error) {
-        console.error('Failed to fetch todos:', error);
-        dispatch(fetchTodosFailure(error instanceof Error ? error.message : 'TODOの取得に失敗しました'));
-      }
-    };
-    
-    loadTodos();
-  }, [dispatch]);
+  // 初回マウント時のデータ取得は App.tsx で実装されているので、ここでは実装しない
+  // ブラウザの更新ボタンが押された時やタブがアクティブになった時の同期も App.tsx で処理
   
   // 完了状態の切り替え
   const handleToggleComplete = async (id: string, completed: boolean) => {

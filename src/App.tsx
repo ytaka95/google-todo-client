@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './store';
 import { loginSuccess } from './features/auth/authSlice';
+import { fetchTodosSuccess, fetchTodosStart, fetchTodosFailure } from './features/todos/todosSlice';
 import LoginPage from './components/LoginPage';
 import TodoList from './components/TodoList';
 import { initGoogleAuth, initGapiClient, getAccessToken } from './services/auth';
+import { fetchTodos } from './services/todoApi';
 import './App.css';
 
 function App() {
@@ -107,6 +109,52 @@ function App() {
       isMounted = false;
     };
   }, [dispatch]);
+
+  // ブラウザの更新ボタンが押された時にデータを同期する
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        // タブがアクティブになった時にデータを同期
+        try {
+          dispatch(fetchTodosStart());
+          const todos = await fetchTodos();
+          dispatch(fetchTodosSuccess(todos));
+        } catch (error) {
+          console.error('Failed to sync todos on visibility change:', error);
+          dispatch(fetchTodosFailure(error instanceof Error ? error.message : 'TODOの同期に失敗しました'));
+        }
+      }
+    };
+
+    const handlePageRefresh = async () => {
+      try {
+        dispatch(fetchTodosStart());
+        const todos = await fetchTodos();
+        dispatch(fetchTodosSuccess(todos));
+      } catch (error) {
+        console.error('Failed to sync todos on page load:', error);
+        dispatch(fetchTodosFailure(error instanceof Error ? error.message : 'TODOの同期に失敗しました'));
+      }
+    };
+
+    // 初回ロード時に同期
+    handlePageRefresh();
+    
+    // タブの表示状態変更イベントをリッスン
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // beforeunload イベントでリフレッシュ検知（参考用）
+    window.addEventListener('beforeunload', () => {
+      // ここでは実際に何もしない（リフレッシュ後に handlePageRefresh が動作する）
+      console.log('Page is refreshing...');
+    });
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthenticated, dispatch]);
 
   // ローディング中
   if (loading) {

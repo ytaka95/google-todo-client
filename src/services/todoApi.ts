@@ -224,13 +224,27 @@ export const addTodo = async (todoData: Omit<TodoItem, 'id' | 'createdAt' | 'upd
     // 作成されたタスクをTodoItem形式に変換して返す
     const newTodo = mapGoogleTaskToTodoItem(response.result);
     
-    // キャッシュを更新
-    const cachedTodos = localStorage.getItem(TODOS_CACHE_KEY);
-    const todos = cachedTodos ? JSON.parse(cachedTodos) : [];
-    todos.push(newTodo);
-    localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(todos));
-    
-    return newTodo;
+    // サーバーから最新データを取得して同期する
+    try {
+      // 全てのタスクを再取得
+      const updatedTodos = await fetchTodos();
+      // キャッシュを更新
+      localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(updatedTodos));
+      
+      // ただし、今追加したタスクのデータは返す必要があるので、
+      // 再取得したデータから該当タスクを見つける
+      const updatedTodo = updatedTodos.find(todo => todo.id === newTodo.id) || newTodo;
+      return updatedTodo;
+    } catch (syncError) {
+      console.warn('Failed to sync after adding todo:', syncError);
+      // 同期に失敗した場合は元のデータで古い方法でキャッシュ更新
+      const cachedTodos = localStorage.getItem(TODOS_CACHE_KEY);
+      const todos = cachedTodos ? JSON.parse(cachedTodos) : [];
+      todos.push(newTodo);
+      localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(todos));
+      
+      return newTodo;
+    }
   };
   
   try {
@@ -293,18 +307,32 @@ export const updateTodo = async (id: string, todoData: Partial<Omit<TodoItem, 'i
     // 更新されたタスクをTodoItem形式に変換
     const updatedTodo = mapGoogleTaskToTodoItem(response.result);
     
-    // キャッシュを更新
-    const cachedTodos = localStorage.getItem(TODOS_CACHE_KEY);
-    if (cachedTodos) {
-      const todos = JSON.parse(cachedTodos);
-      const index = todos.findIndex((todo: TodoItem) => todo.id === id);
-      if (index !== -1) {
-        todos[index] = updatedTodo;
-        localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(todos));
+    // サーバーから最新データを取得して同期する
+    try {
+      // 全てのタスクを再取得
+      const updatedTodos = await fetchTodos();
+      // キャッシュを更新
+      localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(updatedTodos));
+      
+      // ただし、今更新したタスクのデータは返す必要があるので、
+      // 再取得したデータから該当タスクを見つける
+      const refreshedTodo = updatedTodos.find(todo => todo.id === id) || updatedTodo;
+      return refreshedTodo;
+    } catch (syncError) {
+      console.warn('Failed to sync after updating todo:', syncError);
+      // 同期に失敗した場合は元のデータで古い方法でキャッシュ更新
+      const cachedTodos = localStorage.getItem(TODOS_CACHE_KEY);
+      if (cachedTodos) {
+        const todos = JSON.parse(cachedTodos);
+        const index = todos.findIndex((todo: TodoItem) => todo.id === id);
+        if (index !== -1) {
+          todos[index] = updatedTodo;
+          localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(todos));
+        }
       }
+      
+      return updatedTodo;
     }
-    
-    return updatedTodo;
   };
   
   try {
@@ -335,12 +363,21 @@ export const deleteTodo = async (id: string): Promise<string> => {
       task: id
     });
     
-    // キャッシュを更新
-    const cachedTodos = localStorage.getItem(TODOS_CACHE_KEY);
-    if (cachedTodos) {
-      const todos = JSON.parse(cachedTodos);
-      const filteredTodos = todos.filter((todo: TodoItem) => todo.id !== id);
-      localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(filteredTodos));
+    // サーバーから最新データを取得して同期する
+    try {
+      // 全てのタスクを再取得
+      const updatedTodos = await fetchTodos();
+      // キャッシュを更新
+      localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(updatedTodos));
+    } catch (syncError) {
+      console.warn('Failed to sync after deleting todo:', syncError);
+      // 同期に失敗した場合は元のデータで古い方法でキャッシュ更新
+      const cachedTodos = localStorage.getItem(TODOS_CACHE_KEY);
+      if (cachedTodos) {
+        const todos = JSON.parse(cachedTodos);
+        const filteredTodos = todos.filter((todo: TodoItem) => todo.id !== id);
+        localStorage.setItem(TODOS_CACHE_KEY, JSON.stringify(filteredTodos));
+      }
     }
     
     return id;
