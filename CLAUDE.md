@@ -39,3 +39,25 @@
 - Keep components in `/src/components/`
 - Utility functions in `/src/utils/`
 - API services in `/src/services/`
+
+## File Documentation
+
+### Auth Related Files
+- `src/services/auth.ts`: Google OAuth authentication service with functions like `initGoogleAuth()`, `signInWithGoogle()`, and `signOut()`
+- `src/features/auth/authSlice.ts`: Redux slice for authentication state management with actions for login/logout
+- `src/components/LoginPage.tsx`: Main login page component that initializes Google Auth and renders LoginButton
+- `src/components/LoginButton.tsx`: Button component that triggers Google sign-in
+
+### Todo Related Files
+- `src/components/TodoList.tsx`: Main component displaying the list of todos, includes logout button
+- `src/components/TodoItem.tsx`: Individual todo item component
+- `src/components/TodoModal.tsx`: Modal for viewing, editing, or adding todo items
+- `src/features/todos/todosSlice.ts`: Redux slice for todo state management
+- `src/services/todoApi.ts`: API service for todo CRUD operations
+- `src/types/todo.ts`: TypeScript interfaces for todo data
+
+### App Structure
+- `src/App.tsx`: Main application component with authentication routing logic
+- `src/App.css`: Global styles including logout button and header styles
+- `src/main.tsx`: Entry point that sets up Redux store and renders App component
+- `src/store/index.ts`: Redux store configuration
