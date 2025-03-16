@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchTodosStart, fetchTodosSuccess, fetchTodosFailure, updateTodoStart, updateTodoSuccess } from '../features/todos/todosSlice';
-import { logout } from '../features/auth/authSlice';
 import TodoItem from './TodoItem';
 import TodoModal from './TodoModal';
 import { TodoItem as TodoItemType } from '../types/todo';
 import { fetchTodos, updateTodo } from '../services/todoApi';
-import { signOut } from '../services/auth';
 
 const TodoList: React.FC = () => {
   const dispatch = useDispatch();
@@ -69,15 +68,7 @@ const TodoList: React.FC = () => {
     setModalMode('edit');
   };
   
-  // ログアウト処理
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      dispatch(logout());
-    } catch (error) {
-      console.error('Failed to logout:', error);
-    }
-  };
+  // ログアウト処理は LogoutPage コンポーネントに移動
   
   if (loading && items.length === 0) {
     return <div className="loading">読み込み中...</div>;
@@ -91,9 +82,9 @@ const TodoList: React.FC = () => {
     <div className="todo-list-container">
       <div className="todo-header">
         <h1>ToDo一覧</h1>
-        <button className="logout-button" onClick={handleLogout}>
+        <Link to="/logout" className="logout-button">
           ログアウト
-        </button>
+        </Link>
       </div>
       
       <div className="todo-list">
