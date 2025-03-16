@@ -5,7 +5,8 @@ interface GapiClient {
     discoveryDocs?: string[];
     scope?: string;
   }) => Promise<void>;
-  tasks: {
+  setToken: (token: { access_token: string }) => void;
+  tasks?: {
     tasks: {
       list: (params: {
         tasklist: string;
@@ -90,14 +91,39 @@ interface GapiClient {
 
 interface GapiType {
   load: (api: string, callback: () => void) => void;
-  client: GapiClient;
-  auth: {
+  client?: GapiClient;
+  auth?: {
     getToken: () => { access_token: string };
+  };
+}
+
+// Google Identity Services (GSI) types
+interface GoogleAccountsType {
+  id: {
+    initialize: (config: any) => void;
+    renderButton: (element: HTMLElement, options: any) => void;
+    prompt: () => void;
+  };
+  oauth2: {
+    initTokenClient: (config: {
+      client_id: string;
+      scope: string;
+      prompt?: string;
+      callback: (response: any) => void;
+    }) => {
+      requestAccessToken: (options?: { state?: string }) => void;
+    };
+    initCodeClient: (config: any) => any;
+    hasGrantedAllScopes: (token: string, ...scopes: string[]) => boolean;
+    revoke: (accessToken: string, callback?: () => void) => void;
   };
 }
 
 declare global {
   interface Window {
-    gapi: GapiType;
+    gapi?: GapiType;
+    google?: {
+      accounts?: GoogleAccountsType;
+    };
   }
 }

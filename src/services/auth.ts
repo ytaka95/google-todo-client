@@ -16,27 +16,86 @@ export interface GoogleUserInfo {
 
 // Google OAuth2クライアントとGAPIの初期化
 export const initGoogleAuth = (): Promise<void> => {
+  // 既にスクリプトが読み込まれている場合は再読み込みしない
+  if (window.gapi && window.google && window.google.accounts) {
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
-    // GAPI（Google API）のJSスクリプトを動的に読み込む
-    const gapiScript = document.createElement('script');
-    gapiScript.src = 'https://apis.google.com/js/api.js';
-    gapiScript.async = true;
-    gapiScript.defer = true;
-    gapiScript.onload = () => {
-      // GAPIのクライアントライブラリを読み込む
+    try {
+      // すでにスクリプトが追加されているかチェック
+      if (document.querySelector('script[src="https://apis.google.com/js/api.js"]')) {
+        if (window.gapi) {
+          loadGsiScript();
+        } else {
+          // スクリプトはあるがまだ読み込まれていない場合
+          setTimeout(() => {
+            if (window.gapi) {
+              loadGsiScript();
+            } else {
+              reject(new Error('GAPI script exists but failed to load'));
+            }
+          }, 1000);
+        }
+        return;
+      }
+
+      // GAPI（Google API）のJSスクリプトを動的に読み込む
+      const gapiScript = document.createElement('script');
+      gapiScript.src = 'https://apis.google.com/js/api.js';
+      gapiScript.async = true;
+      gapiScript.defer = true;
+      gapiScript.onload = () => {
+        console.log('GAPI script loaded successfully');
+        loadGsiScript();
+      };
+      gapiScript.onerror = () => {
+        console.error('Failed to load GAPI script');
+        reject(new Error('Google API load failed'));
+      };
+      document.head.appendChild(gapiScript);
+    } catch (err) {
+      console.error('Error in initGoogleAuth:', err);
+      reject(err);
+    }
+
+    // GSI (Google Identity Services) スクリプトを読み込む関数
+    function loadGsiScript() {
+      // すでにGSIスクリプトが追加されているかチェック
+      if (document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
+        if (window.google && window.google.accounts) {
+          resolve();
+        } else {
+          // スクリプトはあるがまだ読み込まれていない場合
+          setTimeout(() => {
+            if (window.google && window.google.accounts) {
+              resolve();
+            } else {
+              reject(new Error('GSI script exists but failed to load'));
+            }
+          }, 1000);
+        }
+        return;
+      }
+
+      // GSIスクリプトを読み込む
       window.gapi.load('client', () => {
-        // OAuth GSI クライアントも読み込む
+        console.log('GAPI client loaded successfully');
         const gsiScript = document.createElement('script');
         gsiScript.src = 'https://accounts.google.com/gsi/client';
         gsiScript.async = true;
         gsiScript.defer = true;
-        gsiScript.onload = () => resolve();
-        gsiScript.onerror = () => reject(new Error('Google Identity Services API load failed'));
+        gsiScript.onload = () => {
+          console.log('GSI script loaded successfully');
+          resolve();
+        };
+        gsiScript.onerror = () => {
+          console.error('Failed to load GSI script');
+          reject(new Error('Google Identity Services API load failed'));
+        };
         document.head.appendChild(gsiScript);
       });
-    };
-    gapiScript.onerror = () => reject(new Error('Google API load failed'));
-    document.head.appendChild(gapiScript);
+    }
   });
 };
 
@@ -46,10 +105,42 @@ export const initGapiClient = async (): Promise<void> => {
   const token = getAccessToken();
   if (!token) return;
 
-  await window.gapi.client.init({
-    // APIキーは不要。アクセストークンを使用する
-    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest']
-  });
+  // gapi.clientが利用可能かチェック
+  if (!window.gapi || !window.gapi.client) {
+    // GAPIクライアントが読み込まれていない場合は、読み込む
+    return new Promise((resolve, reject) => {
+      if (!window.gapi) {
+        reject(new Error('Google API (gapi) is not loaded. Please check if the script is included.'));
+        return;
+      }
+
+      window.gapi.load('client', async () => {
+        try {
+          // タスクAPIの初期化
+          await window.gapi.client.init({
+            // APIキーは不要。アクセストークンを使用する
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest']
+          });
+          
+          // アクセストークンを設定
+          window.gapi.client.setToken({ access_token: token });
+          
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  } else {
+    // 既に読み込まれている場合は、そのままinitを呼び出す
+    await window.gapi.client.init({
+      // APIキーは不要。アクセストークンを使用する
+      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest']
+    });
+    
+    // アクセストークンを設定
+    window.gapi.client.setToken({ access_token: token });
+  }
 };
 
 // 認証情報からユーザー情報を取得する関数
