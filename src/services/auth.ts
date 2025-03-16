@@ -216,21 +216,53 @@ export const getAccessToken = (): string | null => {
 
 // ログアウト処理
 export const signOut = (): Promise<void> => {
-  // ローカルストレージからトークンを削除する
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem('user_info');
-  localStorage.removeItem('oauth_state');
-  
-  // Google RevocationクライアントでOAuthトークンを明示的に無効化する場合
-  // const token = getAccessToken();
-  // if (token) {
-  //   fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/x-www-form-urlencoded'
-  //     }
-  //   });
-  // }
-  
-  return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    const token = getAccessToken();
+    
+    // ローカルストレージからトークンとユーザー情報を削除
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem('user_info');
+    localStorage.removeItem('oauth_state');
+    localStorage.removeItem('default_tasklist_id'); // タスクリストIDも削除
+    localStorage.removeItem('google_todos_cache'); // TODOキャッシュも削除
+    
+    // Google RevocationクライアントでOAuthトークンを明示的に無効化
+    if (token) {
+      try {
+        if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+          // GoogleのJSクライアントを使用してトークンをrevoke
+          window.google.accounts.oauth2.revoke(token, () => {
+            console.log('Token revoked successfully');
+            resolve();
+          });
+        } else {
+          // 直接APIエンドポイントを使用してトークンをrevoke
+          fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          })
+          .then(response => {
+            if (response.ok) {
+              console.log('Token revoked successfully');
+            } else {
+              console.warn('Token revocation failed:', response.status);
+            }
+            resolve();
+          })
+          .catch(error => {
+            console.error('Token revocation error:', error);
+            resolve(); // エラーがあっても処理を続行
+          });
+        }
+      } catch (error) {
+        console.error('Error during logout:', error);
+        resolve(); // エラーがあっても処理を続行
+      }
+    } else {
+      // トークンがない場合は即時解決
+      resolve();
+    }
+  });
 };

@@ -157,6 +157,9 @@ body {
   font-size: 0.9rem;
   cursor: pointer;
   transition: background-color 0.2s;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
 }
 
 .logout-button:hover {
@@ -440,4 +443,20 @@ body {
   flex-direction: column;
   text-align: center;
   padding: 1rem;
+}
+
+/* ログアウトページのスタイル */
+.logout-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--background-light);
+}
+
+.logout-page p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
 }
