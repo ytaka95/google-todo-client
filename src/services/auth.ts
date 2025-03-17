@@ -1,7 +1,7 @@
 // Google OAuth2認証関連の関数
 // Google Tasks APIと連携するための認証機能を提供
 
-export const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+export const CLIENT_ID = '695468878893-opk087f492qqm9n18rjiqob7fecuuq5s.apps.googleusercontent.com';
 
 // アクセストークンを保存するキー
 const ACCESS_TOKEN_KEY = 'google_access_token';
