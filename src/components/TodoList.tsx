@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState } from '../store';
-import { fetchTodosStart, fetchTodosSuccess, fetchTodosFailure, updateTodoStart, updateTodoSuccess } from '../features/todos/todosSlice';
+import { updateTodoStart, updateTodoSuccess } from '../features/todos/todosSlice';
 import TodoItem from './TodoItem';
 import TodoModal from './TodoModal';
 import { TodoItem as TodoItemType } from '../types/todo';
-import { fetchTodos, updateTodo } from '../services/todoApi';
+import { updateTodo } from '../services/todoApi';
 
 const TodoList: React.FC = () => {
   const dispatch = useDispatch();
