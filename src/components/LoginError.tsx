@@ -9,7 +9,7 @@ const LoginError: React.FC = () => {
   
   const handleReturnToLogin = () => {
     // エラーメッセージをクリアしてログイン画面に戻る
-    dispatch(loginFailure(null));
+    dispatch(loginFailure(''));
   };
   
   return (
