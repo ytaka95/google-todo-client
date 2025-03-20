@@ -1,6 +1,13 @@
 # Google ToDo Client
 
-Google Tasks APIを利用した、カスタムTODOリストアプリケーションです。標準のWebインターフェースよりも使いやすい機能を提供することを目指しています。
+Google Tasks APIを利用した、カスタムTODOリストアプリケーション。
+
+## 背景
+
+生成AIを使ってどこまでできるのかを検証するために作成した。
+初期構築時に利用した要件は [requirements.md](requirements.md)。
+
+基本的に [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) を利用。ただし細かいエラーが解消できないときは他のサービスも利用し自分でもコード修正している。
 
 ## 機能
 
@@ -42,27 +49,13 @@ cd google-todo-client
 npm install
 ```
 
-3. 環境変数の設定:
-
-`.env.example`ファイルを`.env`にコピーし、Googleデベロッパーコンソールで取得したOAuth 2.0クライアントIDを設定します。
-
-```
-cp .env.example .env
-```
-
-`.env`ファイルを編集:
-
-```
-VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
-```
-
-4. 開発サーバーの起動:
+3. 開発サーバーの起動:
 
 ```
 npm run dev
 ```
 
-5. ブラウザでアクセス:
+4. ブラウザでアクセス:
 
 ```
 http://localhost:5173/
@@ -80,7 +73,9 @@ npm run build
 
 ## デプロイ
 
-このアプリケーションはCloudflare Pagesにデプロイすることを想定しています。GitHubリポジトリと連携することで、自動デプロイが可能です。
+このアプリケーションはCloudflare Pagesにデプロイしています。GitHubリポジトリと連携することで、自動デプロイが可能です。
+
+https://tasks.ytkd.jp/
 
 ## ライセンス
 
