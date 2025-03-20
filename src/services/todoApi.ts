@@ -209,6 +209,16 @@ export const addTodo = async (todoData: Omit<TodoItem, 'id' | 'createdAt' | 'upd
             throw new Error('アクセストークンがありません。再ログインしてください。');
         }
 
+        // tasksクライアントの初期化確認
+        if (!window.gapi?.client?.tasks) {
+            throw new Error('GAPIのtasksクライアントが初期化されていません。');
+        }
+
+        // tasksクライアントの初期化確認
+        if (!window.gapi?.client?.tasks) {
+            throw new Error('GAPIのtasksクライアントが初期化されていません。');
+        }
+
         // デフォルトのタスクリストIDを取得
         const taskListId = await fetchDefaultTaskList();
 
@@ -274,6 +284,10 @@ export const updateTodo = async (id: string, todoData: Partial<Omit<TodoItem, 'i
 
         // 先に現在のタスクを取得
         try {
+            if (!window.gapi?.client?.tasks) {
+                throw new Error('GAPIのtasksクライアントが初期化されていません。');
+            }
+
             const currentTask = await window.gapi.client.tasks.tasks.get({
                 tasklist: taskListId,
                 task: id
@@ -291,6 +305,11 @@ export const updateTodo = async (id: string, todoData: Partial<Omit<TodoItem, 'i
         } catch (error) {
             console.error('Failed to fetch current task state:', error);
             // 取得に失敗しても更新は続行（エラーはスローしない）
+        }
+
+        // tasksクライアントの初期化確認
+        if (!window.gapi?.client?.tasks) {
+            throw new Error('GAPIのtasksクライアントが初期化されていません。');
         }
 
         // デバッグ用にリクエスト情報をログ出力
@@ -352,6 +371,11 @@ export const deleteTodo = async (id: string): Promise<string> => {
         const token = getAccessToken();
         if (!token) {
             throw new Error('アクセストークンがありません。再ログインしてください。');
+        }
+
+        // tasksクライアントの初期化確認
+        if (!window.gapi?.client?.tasks) {
+            throw new Error('GAPIのtasksクライアントが初期化されていません。');
         }
 
         // デフォルトのタスクリストIDを取得

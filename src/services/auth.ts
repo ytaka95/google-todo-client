@@ -122,6 +122,8 @@ export const initGapiClient = async (): Promise<void> => {
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest']
                     });
 
+                    await window.gapi.client.load('tasks', 'v1');
+
                     // アクセストークンを設定
                     window.gapi.client.setToken({ access_token: token });
 
